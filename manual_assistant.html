@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <style>
+        /* Basic scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        .file-item-selected {
+            background-color: #3b82f6 !important;
+            color: white !important;
+        }
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background-color: #9ca3af;
+            border-radius: 50%;
+            display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+        /* Modal styles */
+        #api-key-modal {
+            transition: opacity 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 font-sans antialiased">
+    <!-- API Key Modal -->
+    <div id="api-key-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md mx-4">
+            <h2 class="text-2xl font-bold text-white mb-4">Enter Your Gemini API Key</h2>
+            <p class="text-gray-400 mb-6 text-sm">To use this application, you need a Google Gemini API key. You can get one for free from Google AI Studio. The key will be saved in your browser's local storage for future use.</p>
+            <form id="api-key-form">
+                <input type="password" id="api-key-input" placeholder="Paste your API key here" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                <div class="flex justify-between items-center">
+                     <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-sm text-blue-400 hover:underline">Get a Free API Key &rarr;</a>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Save Key</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <div class="flex h-screen">
+        <!-- Left Panel: File Management -->
+        <div class="w-1/3 bg-gray-800 p-6 flex flex-col border-r border-gray-700">
+            <header class="mb-6 flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-white">Manual Assistant</h1>
+                    <p class="text-sm text-gray-400">Upload PDFs and ask questions.</p>
+                </div>
+                <button id="settings-button" title="API Key Settings">
+                    <svg class="w-6 h-6 text-gray-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </button>
+            </header>
+            
+            <div id="upload-zone" class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 hover:bg-gray-700 transition-colors">
+                <input type="file" id="pdf-upload" class="hidden" accept=".pdf" multiple>
+                <label for="pdf-upload" class="cursor-pointer">
+                    <svg class="mx-auto h-12 w-12 text-gray-500" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    <p class="mt-2 text-sm text-gray-400"><span class="font-semibold text-blue-400">Click to upload</span> or drag and drop</p>
+                    <p class="text-xs text-gray-500">PDF files only</p>
+                </label>
+            </div>
+
+            <div id="processing-indicator" class="hidden mt-4 text-center">
+                <p class="text-sm text-blue-400">Processing file...</p>
+                <div class="w-full bg-gray-700 rounded-full h-2.5 mt-2">
+                    <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex-grow overflow-y-auto">
+                <h2 class="text-lg font-semibold text-gray-300 mb-2">My Manuals</h2>
+                <ul id="file-list" class="space-y-2">
+                    <li id="no-files-message" class="text-gray-500 text-sm">No manuals uploaded yet.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Right Panel: Chat Interface -->
+        <div class="w-2/3 flex flex-col bg-gray-900">
+            <header id="chat-header" class="p-4 border-b border-gray-800 text-center">
+                <h2 class="text-xl font-semibold">Select a manual to start chatting</h2>
+            </header>
+
+            <main id="chat-window" class="flex-grow p-6 overflow-y-auto">
+                <div id="chat-messages" class="space-y-4">
+                    <!-- Chat messages will be appended here -->
+                </div>
+            </main>
+
+            <footer id="chat-footer" class="p-4 border-t border-gray-800">
+                <form id="chat-form" class="flex items-center space-x-4">
+                    <input type="text" id="chat-input" placeholder="Ask a question..." class="flex-grow bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white disabled:opacity-50" disabled>
+                    <button type="submit" id="send-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </button>
+                </form>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const uploadZone = document.getElementById('upload-zone');
+        const pdfUpload = document.getElementById('pdf-upload');
+        const fileList = document.getElementById('file-list');
+        const noFilesMessage = document.getElementById('no-files-message');
+        const processingIndicator = document.getElementById('processing-indicator');
+        const progressBar = document.getElementById('progress-bar');
+        const chatHeader = document.getElementById('chat-header');
+        const chatWindow = document.getElementById('chat-window');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-button');
+        const apiKeyModal = document.getElementById('api-key-modal');
+        const apiKeyForm = document.getElementById('api-key-form');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const settingsButton = document.getElementById('settings-button');
+
+        // Configure PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
+
+        let state = {
+            manuals: {}, // { "filename.pdf": "full text content..." }
+            currentManual: null, // "filename.pdf"
+            isProcessing: false,
+            isAwaitingResponse: false,
+            apiKey: null,
+        };
+        
+        // --- API Key Management ---
+        function setupApiKey() {
+            state.apiKey = localStorage.getItem('geminiApiKey');
+            if (!state.apiKey) {
+                apiKeyModal.classList.remove('hidden');
+            } else {
+                apiKeyModal.classList.add('hidden');
+            }
+            updateUI();
+        }
+
+        apiKeyForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                state.apiKey = key;
+                localStorage.setItem('geminiApiKey', key);
+                apiKeyModal.classList.add('hidden');
+                updateUI();
+                addMessage('system', 'API Key saved successfully.');
+            }
+        });
+
+        settingsButton.addEventListener('click', () => {
+            apiKeyInput.value = state.apiKey || '';
+            apiKeyModal.classList.remove('hidden');
+        });
+
+        // --- File Handling ---
+        function setupDragAndDrop() {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadZone.addEventListener(eventName, preventDefaults, false);
+            });
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadZone.addEventListener(eventName, () => uploadZone.classList.add('bg-gray-700', 'border-blue-500'), false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadZone.addEventListener(eventName, () => uploadZone.classList.remove('bg-gray-700', 'border-blue-500'), false);
+            });
+            uploadZone.addEventListener('drop', handleDrop, false);
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        pdfUpload.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        async function handleFiles(files) {
+            if (state.isProcessing) return;
+            const pdfFiles = Array.from(files).filter(file => file.type === 'application/pdf');
+            if (pdfFiles.length === 0) return;
+
+            state.isProcessing = true;
+            updateUI();
+
+            for (const file of pdfFiles) {
+                await processPdf(file);
+            }
+
+            state.isProcessing = false;
+            updateUI();
+        }
+
+        async function processPdf(file) {
+            if (state.manuals[file.name]) {
+                console.log(`File ${file.name} already processed.`);
+                return;
+            }
+
+            processingIndicator.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            
+            try {
+                const fileReader = new FileReader();
+                await new Promise((resolve, reject) => {
+                    fileReader.onload = resolve;
+                    fileReader.onerror = reject;
+                    fileReader.readAsArrayBuffer(file);
+                });
+
+                const pdf = await pdfjsLib.getDocument({ data: fileReader.result }).promise;
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+                    progressBar.style.width = `${(i / pdf.numPages) * 100}%`;
+                }
+                
+                state.manuals[file.name] = fullText;
+                
+                if (!state.currentManual) {
+                    selectManual(file.name);
+                }
+
+            } catch (error) {
+                console.error('Error processing PDF:', error);
+                addMessage('system', `Failed to process ${file.name}. It may be corrupted or protected.`);
+            } finally {
+                processingIndicator.classList.add('hidden');
+                updateUI();
+            }
+        }
+        
+        // --- UI Rendering ---
+        function renderFileList() {
+            fileList.innerHTML = '';
+            const manualNames = Object.keys(state.manuals);
+
+            if (manualNames.length === 0) {
+                fileList.appendChild(noFilesMessage);
+                return;
+            }
+
+            manualNames.forEach(name => {
+                const li = document.createElement('li');
+                li.className = `p-3 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors text-sm truncate ${state.currentManual === name ? 'file-item-selected' : 'bg-gray-700'}`;
+                li.textContent = name;
+                li.dataset.filename = name;
+                li.addEventListener('click', () => selectManual(name));
+                fileList.appendChild(li);
+            });
+        }
+        
+        function updateUI() {
+            renderFileList();
+            
+            const hasApiKey = !!state.apiKey;
+            const canChat = hasApiKey && state.currentManual && !state.isAwaitingResponse;
+            
+            chatInput.disabled = !canChat;
+            sendButton.disabled = !canChat;
+            
+            if (!hasApiKey) {
+                chatInput.placeholder = 'Please enter your API key in settings.';
+                 chatHeader.innerHTML = `<h2 class="text-xl font-semibold text-yellow-400">API Key Required</h2>`;
+            } else if (state.currentManual) {
+                chatHeader.innerHTML = `<h2 class="text-xl font-semibold truncate">${state.currentManual}</h2>`;
+                chatInput.placeholder = `Ask a question about ${state.currentManual}`;
+            } else {
+                chatHeader.innerHTML = `<h2 class="text-xl font-semibold">Select a manual to start chatting</h2>`;
+                chatInput.placeholder = 'Please upload and select a manual first.';
+            }
+        }
+
+        function selectManual(filename) {
+            if (state.currentManual === filename) return;
+            state.currentManual = filename;
+            chatMessages.innerHTML = '';
+            addMessage('assistant', `Ready to answer questions about <strong>${filename}</strong>.`);
+            updateUI();
+        }
+        
+        // --- Chat Logic ---
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const query = chatInput.value.trim();
+            if (!query || !state.currentManual || state.isAwaitingResponse || !state.apiKey) return;
+
+            addMessage('user', query);
+            chatInput.value = '';
+            state.isAwaitingResponse = true;
+            updateUI();
+            
+            addTypingIndicator();
+
+            try {
+                const responseText = await queryGemini(query);
+                addMessage('assistant', responseText);
+            } catch (error) {
+                console.error("Error querying Gemini:", error);
+                addMessage('system', "Sorry, I couldn't get a response. Please check your API key and the browser console for errors.");
+            } finally {
+                removeTypingIndicator();
+                state.isAwaitingResponse = false;
+                updateUI();
+                chatInput.focus();
+            }
+        });
+
+        function addMessage(sender, text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('flex', 'items-end', 'space-x-3', 'max-w-xl');
+            let bubbleClass, iconHtml;
+
+            if (sender === 'user') {
+                messageDiv.classList.add('ml-auto', 'justify-end');
+                bubbleClass = 'bg-blue-600 text-white';
+                iconHtml = `<div class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center font-bold text-sm">YOU</div>`;
+            } else if (sender === 'assistant') {
+                bubbleClass = 'bg-gray-700 text-gray-200';
+                iconHtml = `<div class="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center font-bold text-sm">AI</div>`;
+            } else { // System messages
+                messageDiv.classList.add('mx-auto', 'justify-center');
+                bubbleClass = 'bg-yellow-800 text-white';
+                iconHtml = `<div class="w-8 h-8 rounded-full bg-yellow-600 flex items-center justify-center font-bold text-sm">!</div>`;
+            }
+
+            messageDiv.innerHTML = `
+                ${sender === 'assistant' || sender === 'system' ? iconHtml : ''}
+                <div class="p-3 rounded-lg ${bubbleClass}">
+                    <p class="text-sm">${text}</p>
+                </div>
+                ${sender === 'user' ? iconHtml : ''}
+            `;
+            chatMessages.appendChild(messageDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function addTypingIndicator() {
+            const indicatorDiv = document.createElement('div');
+            indicatorDiv.id = 'typing-indicator';
+            indicatorDiv.className = 'flex items-end space-x-3 max-w-xl';
+            indicatorDiv.innerHTML = `<div class="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center font-bold text-sm">AI</div><div class="p-3 rounded-lg bg-gray-700"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+            chatMessages.appendChild(indicatorDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) indicator.remove();
+        }
+        
+        // --- Gemini API Call ---
+        async function queryGemini(userQuery) {
+            const manualText = state.manuals[state.currentManual];
+            if (!manualText) return "The selected manual's content could not be found.";
+            if (!state.apiKey) return "Gemini API key is not set. Please set it in the settings.";
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${state.apiKey}`;
+            const systemPrompt = `You are a helpful expert assistant specializing in technical manuals... (Your prompt here)`; // Same prompt as before
+            
+            const payload = {
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents: [{ parts: [{ text: `MANUAL TEXT:\n---\n${manualText}\n---\n\nQUESTION: ${userQuery}` }] }],
+            };
+            
+            // ... (rest of the fetch logic with exponential backoff is the same)
+            let response;
+            let retries = 3;
+            let delay = 1000;
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) break;
+                } catch (error) { console.error(`Attempt ${i+1} failed:`, error); }
+                if (i < retries - 1) { await new Promise(resolve => setTimeout(resolve, delay)); delay *= 2; }
+            }
+
+            if (!response || !response.ok) {
+                throw new Error(`API request failed with status: ${response ? response.status : 'N/A'}`);
+            }
+
+            const result = await response.json();
+            const candidate = result.candidates?.[0];
+
+            if (candidate && candidate.content?.parts?.[0]?.text) {
+                return candidate.content.parts[0].text.replace(/\n/g, '<br>');
+            } else {
+                console.warn("Unexpected API response structure:", result);
+                if (result.error) return `API Error: ${result.error.message}`;
+                return "Sorry, I received an unexpected response from the AI. Please try again.";
+            }
+        }
+
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            setupDragAndDrop();
+            setupApiKey();
+        });
+    </script>
+</body>
+</html>
