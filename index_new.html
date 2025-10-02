@@ -49,22 +49,16 @@
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 font-sans antialiased">
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 hidden">
+    <!-- API Key Modal -->
+    <div id="api-key-modal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 hidden">
         <div class="bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md mx-4">
-            <h2 class="text-2xl font-bold text-white mb-6">Settings</h2>
-            <form id="settings-form">
-                <div class="mb-4">
-                    <label for="api-key-input" class="block text-sm font-medium text-gray-300 mb-1">Gemini API Key</label>
-                    <input type="password" id="api-key-input" placeholder="Paste your API key here" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
-                     <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-blue-400 hover:underline mt-1 inline-block">Get a Free API Key &rarr;</a>
-                </div>
-                <div class="mb-6">
-                    <label for="operator-email-input" class="block text-sm font-medium text-gray-300 mb-1">Operator Email for Escalation</label>
-                    <input type="email" id="operator-email-input" placeholder="expert@example.com" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
-                </div>
-                <div class="flex justify-end">
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Save Settings</button>
+            <h2 class="text-2xl font-bold text-white mb-4">Enter Your Gemini API Key</h2>
+            <p class="text-gray-400 mb-6 text-sm">To use this application, you need a Google Gemini API key. You can get one for free from Google AI Studio. The key will be saved in your browser's local storage for future use.</p>
+            <form id="api-key-form">
+                <input type="password" id="api-key-input" placeholder="Paste your API key here" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                <div class="flex justify-between items-center">
+                     <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-sm text-blue-400 hover:underline">Get a Free API Key &rarr;</a>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Save Key</button>
                 </div>
             </form>
         </div>
@@ -163,10 +157,9 @@
         const chatForm = document.getElementById('chat-form');
         const chatInput = document.getElementById('chat-input');
         const sendButton = document.getElementById('send-button');
-        const settingsModal = document.getElementById('settings-modal');
-        const settingsForm = document.getElementById('settings-form');
+        const apiKeyModal = document.getElementById('api-key-modal');
+        const apiKeyForm = document.getElementById('api-key-form');
         const apiKeyInput = document.getElementById('api-key-input');
-        const operatorEmailInput = document.getElementById('operator-email-input');
         const settingsButton = document.getElementById('settings-button');
         const analyticsModal = document.getElementById('analytics-modal');
         const analyticsButton = document.getElementById('analytics-button');
@@ -183,45 +176,34 @@
             isProcessing: false,
             isAwaitingResponse: false,
             apiKey: null,
-            operatorEmail: null,
         };
         
-        // --- Settings & Modals Management ---
-        function setupSettings() {
+        // --- API Key & Modals Management ---
+        function setupApiKey() {
             state.apiKey = localStorage.getItem('geminiApiKey');
-            state.operatorEmail = localStorage.getItem('operatorEmail');
-            
             if (!state.apiKey) {
-                settingsModal.classList.remove('hidden');
+                apiKeyModal.classList.remove('hidden');
             } else {
-                settingsModal.classList.add('hidden');
+                apiKeyModal.classList.add('hidden');
             }
             updateUI();
         }
 
-        settingsForm.addEventListener('submit', (e) => {
+        apiKeyForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const key = apiKeyInput.value.trim();
-            const email = operatorEmailInput.value.trim();
-
             if (key) {
                 state.apiKey = key;
                 localStorage.setItem('geminiApiKey', key);
+                apiKeyModal.classList.add('hidden');
+                updateUI();
+                addMessage('system', 'API Key saved successfully.');
             }
-            
-            // Always update the email state and storage to reflect the form
-            state.operatorEmail = email;
-            localStorage.setItem('operatorEmail', email);
-            
-            settingsModal.classList.add('hidden');
-            updateUI();
-            addMessage('system', 'Settings saved successfully.');
         });
 
         settingsButton.addEventListener('click', () => {
             apiKeyInput.value = state.apiKey || '';
-            operatorEmailInput.value = state.operatorEmail || '';
-            settingsModal.classList.remove('hidden');
+            apiKeyModal.classList.remove('hidden');
         });
 
         analyticsButton.addEventListener('click', () => {
@@ -398,19 +380,13 @@
                 bubbleClass = 'bg-gray-700 text-gray-200';
                 iconHtml = `<div class="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center font-bold text-sm shrink-0">AI</div>`;
                 
-                let actionButtons = `
-                    <div class="action-buttons mt-2 pt-2 border-t border-gray-600 flex items-center space-x-4">
-                        <div class="feedback-buttons flex items-center space-x-2">
-                            <button class="feedback-btn" data-feedback="up" data-message-id="${messageId}" title="Helpful">
-                               <svg class="w-4 h-4 text-gray-400 hover:text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 18.333V9a2 2 0 012-2h2.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293h3.293z"></path></svg>
-                            </button>
-                            <button class="feedback-btn" data-feedback="down" data-message-id="${messageId}" title="Not Helpful">
-                               <svg class="w-4 h-4 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.738 3h4.017c.163 0 .326.02.485.06L17 5.667V15a2 2 0 01-2 2h-2.586a1 1 0 01-.707-.293l-2.414-2.414a1 1 0 00-.707-.293H6.707z"></path></svg>
-                            </button>
-                        </div>
-                        <button class="escalate-btn flex items-center space-x-1 text-xs text-gray-400 hover:text-yellow-400" title="Escalate to expert">
-                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                           <span>Escalate</span>
+                let feedbackButtons = `
+                    <div class="feedback-buttons mt-2 pt-2 border-t border-gray-600 flex items-center space-x-2">
+                        <button class="feedback-btn" data-feedback="up" data-message-id="${messageId}">
+                           <svg class="w-4 h-4 text-gray-400 hover:text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 18.333V9a2 2 0 012-2h2.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293h3.293z"></path></svg>
+                        </button>
+                        <button class="feedback-btn" data-feedback="down" data-message-id="${messageId}">
+                           <svg class="w-4 h-4 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.738 3h4.017c.163 0 .326.02.485.06L17 5.667V15a2 2 0 01-2 2h-2.586a1 1 0 01-.707-.293l-2.414-2.414a1 1 0 00-.707-.293H6.707z"></path></svg>
                         </button>
                     </div>`;
 
@@ -420,8 +396,9 @@
                                   <button class="expand-button text-blue-400 text-xs font-semibold mt-2 hover:underline">Show More</button>`;
                 }
                 
+                // Don't add feedback buttons to the initial greeting
                 if (state.currentQuery) {
-                    messageBody += actionButtons;
+                    messageBody += feedbackButtons;
                 }
 
                 messageDiv.innerHTML = `${iconHtml}<div class="p-3 rounded-lg ${bubbleClass} w-full" data-full-answer="${encodeURIComponent(JSON.stringify(content))}">${messageBody}</div>`;
@@ -454,58 +431,14 @@
                 const messageBubble = feedbackButton.closest('[data-full-answer]');
                 const fullAnswer = JSON.parse(decodeURIComponent(messageBubble.dataset.fullAnswer));
                 
+                // Store feedback
                 saveFeedback(messageId, state.currentQuery, fullAnswer, feedbackType);
                 
+                // Update UI
                 Array.from(parent.children).forEach(btn => btn.classList.remove('selected', 'text-green-500', 'text-red-500'));
                 feedbackButton.classList.add('selected');
                 if (feedbackType === 'up') feedbackButton.classList.add('text-green-500');
                 if (feedbackType === 'down') feedbackButton.classList.add('text-red-500');
-                return;
-            }
-            
-            const escalateButton = e.target.closest('.escalate-btn');
-            if (escalateButton) {
-                if (!state.operatorEmail || state.operatorEmail.trim() === '') {
-                    addMessage('system', 'Operator email is not set. Please configure it in the settings.');
-                    settingsButton.click();
-                    return;
-                }
-                const messageBubble = escalateButton.closest('[data-full-answer]');
-                const fullAnswer = JSON.parse(decodeURIComponent(messageBubble.dataset.fullAnswer));
-
-                const subject = encodeURIComponent(`Escalated Query from Manual Assistant: ${state.currentManual}`);
-                const body = encodeURIComponent(
-`Hi Team,
-
-A user has escalated the following query regarding the manual "${state.currentManual}".
-
----
-Question:
-${state.currentQuery}
-
----
-AI's Answer:
-${fullAnswer.short.replace(/<br>/g, '\n')}
-
----
-AI's Detailed Answer:
-${(fullAnswer.detailed || 'N/A').replace(/<br>/g, '\n')}
----
-
-Please provide assistance.
-`
-                );
-                const mailtoLink = `mailto:${state.operatorEmail}?subject=${subject}&body=${body}`;
-                
-                // Create a temporary anchor element to trigger the email client more reliably
-                const a = document.createElement('a');
-                a.href = mailtoLink;
-                a.style.display = 'none'; // Hide the element
-                document.body.appendChild(a);
-                a.click(); // Programmatically click the anchor
-                document.body.removeChild(a); // Clean up by removing the element
-
-                addMessage('system', 'Escalation email has been prepared. Please review and send it from your email client for the request to be processed.');
             }
         });
         
@@ -640,7 +573,7 @@ Please provide assistance.
         // --- Initial Setup ---
         document.addEventListener('DOMContentLoaded', () => {
             setupDragAndDrop();
-            setupSettings();
+            setupApiKey();
         });
     </script>
 </body>
