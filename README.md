@@ -16,9 +16,14 @@ Steps to Use the application
 
 ## UI Images
 
+### Settings
 ![API Key](./images/web_api_key.png)
 
+### Chat Interface
 ![Chat Interface](./images/web_interface.png)
 
+### Analytics
 ![Analytics](./images/analytics.png)
+
+### Feedback / Escalate
 ![Feedback](./images/feedback_escalate.png)
