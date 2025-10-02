@@ -17,7 +17,7 @@ Steps to Use the application
 ## UI Images
 
 ### Settings
-![API Key](./images/web_api_key.png)
+![API Key](./images/settings.png)
 
 ### Chat Interface
 ![Chat Interface](./images/web_interface.png)
