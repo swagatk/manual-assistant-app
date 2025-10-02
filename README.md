@@ -5,7 +5,7 @@ Steps to Use the application
 - Provide a Gemini API Key which you can get from [Google AI studio](https://aistudio.google.com/prompts/new_chat). You can use a free tier api key to use this for a limited time. The key is stored temporarily. 
 - Upload a manual that the AI agent should use to respond.  You can download a PDF manual for LG refrigerator from this [link](https://www.manualslib.com/manual/1114650/Lg-Lmxs30776s.html).
 - Ask questions about your faults. 
-- The application is accessible at this link: [https://swagatk.github.io/manual_assistant-app/](https://swagatk.github.io/manual_assistant-app/)
+- The application is accessible at this link: [https://swagatk.github.io/manual-assistant-app/](https://swagatk.github.io/manual-assistant-app/)
 
 ## Features implemented
 - Short / long answers
